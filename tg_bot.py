@@ -4,11 +4,10 @@ python-telegram-bot==11.1.0
 redis==3.2.1
 """
 from environs import Env
-import logging
 import redis
 import shop_api
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (CallbackQueryHandler, CommandHandler, Filters,
                           MessageHandler, Updater)
 
@@ -16,7 +15,7 @@ _database = None
 _shop_token = ''
 
 
-def start(bot, update):
+def menu():
     """
     Хэндлер для состояния START.
 
@@ -30,17 +29,50 @@ def start(bot, update):
                 product['attributes']['name'], callback_data=product["id"]),
         ] for product in products
     ]
-    markup = InlineKeyboardMarkup(keyboard)
+    keyboard.append([InlineKeyboardButton("Корзина", callback_data="cart")])
 
-    update.message.reply_text(text='Привет! Выбери', reply_markup=markup)
+    return InlineKeyboardMarkup(keyboard)
+
+
+def start(update, context):
+    markup = menu()
+    shop_api.get_cart(_shop_token, update.effective_user.id)
+    update.message.reply_text(text='Выберите товар:', reply_markup=markup)
 
     return 'HANDLE_MENU'
 
-def handle_menu(bot,update):
+
+def handle_description(update, context):
+    query = update.callback_query
+    query.answer()
+    if query.data == "back":
+        markup = menu()
+        query.delete_message()
+        query.message.reply_text(text="Выберите товар:", reply_markup=markup)
+        return 'HANDLE_MENU'
+    product_id, quantity = query.data.split(",")
+    shop_api.add_product(_shop_token, update.effective_user.id, product_id, int(quantity)
+                         )
+
+    return 'HANDLE_DESCRIPTION'
+
+
+def handle_menu(update, context):
     query = update.callback_query
     query.answer()
     product_id = query.data
     product = shop_api.get_product(_shop_token, product_id)
+    keyboard = [
+        [
+            InlineKeyboardButton("1 кг", callback_data=1),
+            InlineKeyboardButton("5 кг", callback_data=5),
+            InlineKeyboardButton("10 кг", callback_data=10),
+        ],
+        [
+            InlineKeyboardButton("Назад", callback_data="back"),
+        ]
+    ]
+    markup = InlineKeyboardMarkup(keyboard)
     description = "\n".join(
         [
             product['name'],
@@ -48,11 +80,12 @@ def handle_menu(bot,update):
             product["description"],
         ]
     )
-    query.edit_message_text(text=description)
-    return 'START'
+    query.edit_message_text(text=description, reply_markup=markup)
+
+    return 'HANDLE_DESCRIPTION'
 
 
-def handle_users_reply(bot, update):
+def handle_users_reply(update, context):
     """
     Функция, которая запускается при любом сообщении от пользователя и решает как его обработать.
     Эта функция запускается в ответ на эти действия пользователя:
@@ -81,14 +114,15 @@ def handle_users_reply(bot, update):
 
     states_functions = {
         'START': start,
-        'HANDLE_MENU': handle_menu
+        'HANDLE_MENU': handle_menu,
+        'HANDLE_DESCRIPTION': handle_description,
     }
     state_handler = states_functions[user_state]
     # Если вы вдруг не заметите, что python-telegram-bot перехватывает ошибки.
     # Оставляю этот try...except, чтобы код не падал молча.
     # Этот фрагмент можно переписать.
     try:
-        next_state = state_handler(bot, update)
+        next_state = state_handler(update, context)
         db.set(chat_id, next_state)
     except Exception as err:
         print(err)
