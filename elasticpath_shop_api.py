@@ -24,7 +24,7 @@ def get_products(token: str) -> str:
         "Authorization": f"Bearer {token}",
     }
 
-    url = 'https://api.moltin.com/catalog/products'
+    url = 'https://api.moltin.com/pcm/catalog/products'
 
     response = requests.get(
         url,
@@ -47,7 +47,20 @@ def get_product(token: str, product_id: str) -> dict:
     )
     response.raise_for_status()
 
-    return response.json()['data']['attributes']
+    return response.json()['data']
+
+
+def get_file_link(token, product_id):
+    headers = {
+        "Authorization": f"Bearer {token}",
+    }
+    file_id = get_product(token, product_id)[
+        'relationships']['main_image']['data']['id']
+    url = f'https://api.moltin.com/v2/files/{file_id}'
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+
+    return response.json()['data']['link']['href']
 
 
 def get_cart(token: str, cart_reference: str) -> dict:
@@ -102,3 +115,5 @@ if __name__ == '__main__':
     token = get_access_token(elasticpath_client_id)
     products = get_products(token)
     product_id = products[0]['id']
+    a = get_product(token, product_id)
+    pprint(a)

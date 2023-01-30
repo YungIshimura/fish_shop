@@ -1,12 +1,6 @@
-"""
-Работает с этими модулями:
-python-telegram-bot==11.1.0
-redis==3.2.1
-"""
 from environs import Env
 import redis
 import elasticpath_shop_api
-
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (CallbackQueryHandler, CommandHandler, Filters,
                           MessageHandler, Updater)
@@ -39,7 +33,7 @@ def menu(message):
 
 def show_products(message, product_id):
     product = elasticpath_shop_api.get_product(_shop_token, product_id)
-
+    product_photo_url = elasticpath_shop_api.get_file_link(_shop_token, product_id)
     keyboard = [
         [
             InlineKeyboardButton("1 кг", callback_data=f"{product_id},1"),
@@ -56,12 +50,13 @@ def show_products(message, product_id):
     markup = InlineKeyboardMarkup(keyboard)
     description = "\n".join(
         [
-            product["name"],
+            product['attributes']["name"],
             "\n",
-            product["description"],
+            product['attributes']["description"],
         ]
     )
-    message.reply_text(description, reply_markup=markup)
+    message.reply_photo(
+        product_photo_url, caption=description, reply_markup=markup)
 
 
 def view_cart(message, cart_reference):
@@ -187,8 +182,8 @@ if __name__ == '__main__':
     env = Env()
     env.read_env()
     client_id = env("ELASTICPATH_CLIENT_ID")
-    _shop_token = elasticpath_shop_api.get_access_token(client_id)
     telegram_api_key = env("TELEGRAM_API_KEY")
+    _shop_token = elasticpath_shop_api.get_access_token(client_id)
     updater = Updater(telegram_api_key)
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CallbackQueryHandler(handle_users_reply))
