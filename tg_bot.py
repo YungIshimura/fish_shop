@@ -9,7 +9,7 @@ _database = None
 _shop_token = ''
 
 
-def start(update, context) :
+def start(update, context):
     elasticpath_shop_api.get_cart(_shop_token, update.effective_user.id)
     menu(update.message)
 
@@ -33,7 +33,8 @@ def menu(message):
 
 def show_products(message, product_id):
     product = elasticpath_shop_api.get_product(_shop_token, product_id)
-    product_photo_url = elasticpath_shop_api.get_file_link(_shop_token, product_id)
+    product_photo_url = elasticpath_shop_api.get_file_link(
+        _shop_token, product_id)
     keyboard = [
         [
             InlineKeyboardButton("1 кг", callback_data=f"{product_id},1"),
@@ -44,7 +45,7 @@ def show_products(message, product_id):
             InlineKeyboardButton("Корзина", callback_data="cart")
         ],
         [
-            InlineKeyboardButton("Назад", callback_data="back"),
+            InlineKeyboardButton("В меню", callback_data="back"),
         ],
     ]
     markup = InlineKeyboardMarkup(keyboard)
@@ -64,7 +65,7 @@ def view_cart(message, cart_reference):
         _shop_token, cart_reference)
     total = cart_description["meta"]["display_price"]["with_tax"]["formatted"]
     cart_items = []
-
+    keyboard = [[InlineKeyboardButton("В меню", callback_data="back")]]
     for item in cart_description["data"]:
         cost = item['meta']['display_price']['with_tax']
         item_description = [
@@ -73,12 +74,13 @@ def view_cart(message, cart_reference):
             f"{item['quantity']} кг на сумму {cost['value']['formatted']}",
             "\n",
         ]
+        keyboard.append([InlineKeyboardButton(
+            f"Убрать {item['name']}", callback_data=item["id"])])
         cart_items.extend(item_description)
 
     cart_items.append(f"Итого: {total}")
     cart_text = "\n".join(cart_items)
 
-    keyboard = [[InlineKeyboardButton("Назад", callback_data="back")]]
     markup = InlineKeyboardMarkup(keyboard)
 
     message.reply_text(cart_text, reply_markup=markup)
@@ -118,6 +120,10 @@ def handle_cart(update, context):
         menu(query.message)
 
         return 'HANDLE_MENU'
+    elasticpath_shop_api.remove_cart_item(
+        _shop_token, update.effective_user.id, query.data,)
+    query.delete_message()
+    view_cart(query.message, cart_reference=update.effective_user.id)
 
     return 'HANDLE_CART'
 
