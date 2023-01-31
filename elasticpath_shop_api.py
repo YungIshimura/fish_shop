@@ -64,43 +64,38 @@ def get_file_link(token, product_id):
 
 
 def get_cart(token: str, cart_reference: str) -> dict:
-    header = {
+    headers = {
         "Authorization": f"Bearer {token}",
     }
     url = f"https://api.moltin.com/v2/carts/{cart_reference}"
-    response = requests.get(url, headers=header)
+    response = requests.get(url, headers=headers)
     response.raise_for_status()
 
     return response.json()
 
 
 def get_cart_items(token: str, cart_reference: str) -> dict:
-    header = {
+    headers = {
         "Authorization": f"Bearer {token}",
     }
     url = f"https://api.moltin.com/v2/carts/{cart_reference}/items"
-    response = requests.get(url, headers=header)
+    response = requests.get(url, headers=headers)
     response.raise_for_status()
 
     return response.json()
 
 
 def remove_cart_item(token: str, cart_reference: str, item_id: str,) -> None:
-    header = {
+    headers = {
         "Authorization": f"Bearer {token}",
     }
     url = f"https://api.moltin.com/v2/carts/{cart_reference}/items/{item_id}"
-    response = requests.delete(url, headers=header)
+    response = requests.delete(url, headers=headers)
     response.raise_for_status()
 
 
-def add_product(
-    token: str,
-    cart_reference: str,
-    product_id: str,
-    quantity: int,
-) -> dict:
-    header = {
+def add_product(token: str, cart_reference: str, product_id: str, quantity: int,) -> dict:
+    headers = {
         "Authorization": f"Bearer {token}",
     }
     url = f"https://api.moltin.com/v2/carts/{cart_reference}/items"
@@ -111,18 +106,36 @@ def add_product(
             "quantity": quantity,
         },
     }
-    response = requests.post(url, headers=header, json=data)
+    response = requests.post(url, headers=headers, json=data)
     response.raise_for_status()
 
     return response.json()
 
 
-if __name__ == '__main__':
-    env = Env()
-    env.read_env()
-    elasticpath_client_id = env('ELASTICPATH_CLIENT_ID')
-    token = get_access_token(elasticpath_client_id)
-    products = get_products(token)
-    product_id = products[0]['id']
-    a = get_product(token, product_id)
-    pprint(a)
+def create_customer(token: str, name: str, email: str,) -> str:
+    headers = {
+        "Authorization": f"Bearer {token}",
+    }
+    url = f"https://api.moltin.com/v2/customers"
+    data = {
+        "data": {
+            "type": "customer",
+            "name": name,
+            "email": email,
+        },
+    }
+    response = requests.post(url, headers=headers, json=data)
+    response.raise_for_status()
+
+    return response.json()
+
+
+def get_customer(token: str, id: str) -> str:
+    headers = {
+        "Authorization": f"Bearer {token}",
+    }
+    url = f"https://api.moltin.com/v2/customers/{id}"
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+
+    return response.json()

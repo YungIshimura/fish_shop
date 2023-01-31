@@ -4,6 +4,7 @@ import elasticpath_shop_api
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (CallbackQueryHandler, CommandHandler, Filters,
                           MessageHandler, Updater)
+import re
 
 _database = None
 _shop_token = ''
@@ -65,19 +66,18 @@ def view_cart(message, cart_reference):
         _shop_token, cart_reference)
     total = cart_description["meta"]["display_price"]["with_tax"]["formatted"]
     cart_items = []
-    keyboard = [[InlineKeyboardButton("В меню", callback_data="back")]]
+    keyboard = [[InlineKeyboardButton("В меню", callback_data="back")],
+                [InlineKeyboardButton("Оплатить", callback_data="payment")]]
     for item in cart_description["data"]:
         cost = item['meta']['display_price']['with_tax']
         item_description = [
             item['name'],
             f"{cost['unit']['formatted']} за кг",
             f"{item['quantity']} кг на сумму {cost['value']['formatted']}",
-            "\n",
         ]
         keyboard.append([InlineKeyboardButton(
             f"Убрать {item['name']}", callback_data=item["id"])])
         cart_items.extend(item_description)
-
     cart_items.append(f"Итого: {total}")
     cart_text = "\n".join(cart_items)
 
@@ -120,12 +120,36 @@ def handle_cart(update, context):
         menu(query.message)
 
         return 'HANDLE_MENU'
+
+    if query.data == "payment":
+        query.message.reply_text("Пожалуйста, укажите Ваш Email")
+
+        return 'HANDLE_WAITING_EMAIL'
+
     elasticpath_shop_api.remove_cart_item(
         _shop_token, update.effective_user.id, query.data,)
     query.delete_message()
     view_cart(query.message, cart_reference=update.effective_user.id)
 
     return 'HANDLE_CART'
+
+
+def handle_input_email(update, context):
+    user_email = update.message.text
+    if not re.match('[^@]+@[^@]+\.[^@]+', user_email):
+        update.message.reply_text("Ошибка, пожалуйста, укажите корректный адрес электронной почты")
+
+        return 'HANDLE_WAITING_EMAIL'
+    else:
+        user_name = update.effective_user.full_name
+        elasticpath_shop_api.create_customer(
+            token=_shop_token,
+            name=user_name,
+            email=user_email,
+        )
+        menu(update.message)
+
+        return 'HANDLE_MENU'
 
 
 def handle_menu(update, context):
@@ -161,7 +185,8 @@ def handle_users_reply(update, context):
         'START': start,
         'HANDLE_MENU': handle_menu,
         'HANDLE_DESCRIPTION': handle_description,
-        'HANDLE_CART': handle_cart
+        'HANDLE_CART': handle_cart,
+        'HANDLE_WAITING_EMAIL': handle_input_email
     }
     state_handler = states_functions[user_state]
 
