@@ -135,7 +135,9 @@ def handle_cart(update: Update, context) -> str:
 
 def handle_input_email(update: Update, context) -> str:
     user_email = update.message.text
-    if not re.match(r'[^@]+@[^@]+\.[^@]+', user_email):
+    
+    # https://ru.stackoverflow.com/questions/306126/%D0%92%D0%B0%D0%BB%D0%B8%D0%B4%D0%B0%D1%86%D0%B8%D1%8F-email-%D0%B2
+    if not re.match( r"^[-\w\.]+@([-\w]+\.)+[-\w]{2,4}$", user_email):
         update.message.reply_text(
             "Ошибка, пожалуйста, укажите корректный адрес электронной почты")
 
