@@ -11,12 +11,12 @@ _database = None
 
 def start(update: Update, context) -> str:
     elasticpath_shop_api.get_cart(shop_token, update.effective_user.id)
-    menu(update.message)
+    view_menu(update.message)
 
     return 'HANDLE_MENU'
 
 
-def menu(message: Message):
+def view_menu(message: Message):
     products = elasticpath_shop_api.get_products(shop_token)
 
     keyboard = [
@@ -89,14 +89,14 @@ def handle_description(update: Update, context) -> str:
     query = update.callback_query
     query.answer()
     if query.data == "back":
+        view_menu(query.message)
         query.delete_message()
-        menu(query.message)
 
         return 'HANDLE_MENU'
 
     if query.data == "cart":
-        query.delete_message()
         view_cart(query.message, update.effective_user.id)
+        query.delete_message()
 
         return 'HANDLE_CART'
 
@@ -115,8 +115,8 @@ def handle_cart(update: Update, context) -> str:
     query = update.callback_query
     query.answer()
     if query.data == "back":
+        view_menu(query.message)
         query.delete_message()
-        menu(query.message)
 
         return 'HANDLE_MENU'
 
@@ -127,8 +127,8 @@ def handle_cart(update: Update, context) -> str:
 
     elasticpath_shop_api.remove_cart_item(
         shop_token, update.effective_user.id, query.data,)
-    query.delete_message()
     view_cart(query.message, cart_reference=update.effective_user.id)
+    query.delete_message()
 
     return 'HANDLE_CART'
 
@@ -147,7 +147,7 @@ def handle_input_email(update: Update, context) -> str:
             name=user_name,
             email=user_email,
         )
-        menu(update.message)
+        view_menu(update.message)
 
         return 'HANDLE_MENU'
 
