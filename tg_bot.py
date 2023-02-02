@@ -11,13 +11,13 @@ _database = None
 
 def start(update: Update, context) -> str:
     elasticpath_shop_api.get_cart(shop_token, update.effective_user.id)
-    view_menu(update.message)
+    products = elasticpath_shop_api.get_products(shop_token)
+    view_menu(update.message, products)
 
     return 'HANDLE_MENU'
 
 
-def view_menu(message: Message):
-    products = elasticpath_shop_api.get_products(shop_token)
+def view_menu(message: Message, products):
 
     keyboard = [
         [
@@ -89,7 +89,8 @@ def handle_description(update: Update, context) -> str:
     query = update.callback_query
     query.answer()
     if query.data == "back":
-        view_menu(query.message)
+        products = elasticpath_shop_api.get_products(shop_token)
+        view_menu(query.message, products)
         query.delete_message()
 
         return 'HANDLE_MENU'
@@ -115,7 +116,8 @@ def handle_cart(update: Update, context) -> str:
     query = update.callback_query
     query.answer()
     if query.data == "back":
-        view_menu(query.message)
+        products = elasticpath_shop_api.get_products(shop_token)
+        view_menu(query.message, products)
         query.delete_message()
 
         return 'HANDLE_MENU'
@@ -149,7 +151,8 @@ def handle_input_email(update: Update, context) -> str:
             name=user_name,
             email=user_email,
         )
-        view_menu(update.message)
+        products = elasticpath_shop_api.get_products(shop_token)
+        view_menu(update.message, products)
 
         return 'HANDLE_MENU'
 

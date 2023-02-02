@@ -9,9 +9,7 @@ def get_access_token(client_id: str) -> str:
 
     url = 'https://api.moltin.com/oauth/access_token'
 
-    response = requests.get(
-        url, data=data
-    )
+    response = requests.get(url, data=data)
     response.raise_for_status()
 
     return response.json()['access_token']
@@ -24,10 +22,7 @@ def get_products(token: str) -> str:
 
     url = 'https://api.moltin.com/pcm/catalog/products'
 
-    response = requests.get(
-        url,
-        headers=headers
-    )
+    response = requests.get(url, headers=headers)
     response.raise_for_status()
 
     return response.json()['data']
@@ -40,9 +35,7 @@ def get_product(token: str, product_id: str) -> dict:
 
     url = f'https://api.moltin.com/catalog/products/{product_id}'
 
-    response = requests.get(
-        url, headers=headers
-    )
+    response = requests.get(url, headers=headers)
     response.raise_for_status()
 
     return response.json()['data']
