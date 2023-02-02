@@ -135,7 +135,7 @@ def handle_cart(update: Update, context) -> str:
 
 def handle_input_email(update: Update, context) -> str:
     user_email = update.message.text
-    if not re.match('[^@]+@[^@]+\.[^@]+', user_email):
+    if not re.match(r'[^@]+@[^@]+\.[^@]+', user_email):
         update.message.reply_text(
             "Ошибка, пожалуйста, укажите корректный адрес электронной почты")
 
