@@ -1,6 +1,4 @@
 import requests
-from environs import Env
-from pprint import pprint
 
 
 def get_access_token(client_id: str) -> str:
