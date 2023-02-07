@@ -1,18 +1,32 @@
 import requests
+from datetime import datetime
+
+
+_token = None
+_expires = None
 
 
 def get_access_token(client_id: str) -> str:
+    global _token
+    global _expires
+
+    url = 'https://api.moltin.com/oauth/access_token'
     data = {
         'client_id': client_id,
         "grant_type": "implicit"
     }
+    current_time = datetime.now()
+    timestamp = int(datetime.timestamp(current_time))
+    if _expires:
+        if timestamp < _expires:
+            return _token
 
-    url = 'https://api.moltin.com/oauth/access_token'
-
-    response = requests.get(url, data=data)
+    response = requests.post(url, data=data)
     response.raise_for_status()
+    _token = response.json()['access_token']
+    _expires = response.json()['expires']
 
-    return response.json()['access_token']
+    return _token
 
 
 def get_products(token: str) -> str:
