@@ -23,8 +23,10 @@ def get_access_token(client_id: str) -> str:
 
     response = requests.post(url, data=data)
     response.raise_for_status()
-    _token = response.json()['access_token']
-    _expires = response.json()['expires']
+    
+    access_token_data = response.json()
+    _token = access_token_data['access_token']
+    _expires = access_token_data['expires']
 
     return _token
 
