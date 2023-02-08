@@ -7,11 +7,12 @@ from telegram.ext import (CallbackQueryHandler, CommandHandler, Filters,
 import re
 
 _database = None
-_shop_token = None
+
 
 def start(update: Update, context) -> str:
-    elasticpath_shop_api.get_cart(_shop_token, update.effective_user.id)
-    products = elasticpath_shop_api.get_products(_shop_token)
+    shop_token = elasticpath_shop_api.get_access_token(client_id)
+    elasticpath_shop_api.get_cart(shop_token, update.effective_user.id)
+    products = elasticpath_shop_api.get_products(shop_token)
     view_menu(update.message, products)
 
     return 'HANDLE_MENU'
@@ -32,9 +33,10 @@ def view_menu(message: Message, products):
 
 
 def show_products(message: Message, product_id: str):
-    product = elasticpath_shop_api.get_product(_shop_token, product_id)
+    shop_token = elasticpath_shop_api.get_access_token(client_id)
+    product = elasticpath_shop_api.get_product(shop_token, product_id)
     product_photo_url = elasticpath_shop_api.get_file_link(
-        _shop_token, product_id)
+        shop_token, product_id)
     keyboard = [
         [
             InlineKeyboardButton("1 кг", callback_data=f"{product_id},1"),
@@ -61,8 +63,9 @@ def show_products(message: Message, product_id: str):
 
 
 def view_cart(message: Message, cart_reference: str):
+    shop_token = elasticpath_shop_api.get_access_token(client_id)
     cart_description = elasticpath_shop_api.get_cart_items(
-        _shop_token, cart_reference)
+        shop_token, cart_reference)
     total = cart_description["meta"]["display_price"]["with_tax"]["formatted"]
     cart_items = []
     keyboard = [[InlineKeyboardButton("В меню", callback_data="back")],
@@ -86,10 +89,11 @@ def view_cart(message: Message, cart_reference: str):
 
 
 def handle_description(update: Update, context) -> str:
+    shop_token = elasticpath_shop_api.get_access_token(client_id)
     query = update.callback_query
     query.answer()
     if query.data == "back":
-        products = elasticpath_shop_api.get_products(_shop_token)
+        products = elasticpath_shop_api.get_products(shop_token)
         view_menu(query.message, products)
         query.delete_message()
 
@@ -102,8 +106,9 @@ def handle_description(update: Update, context) -> str:
         return 'HANDLE_CART'
 
     product_id, quantity = query.data.split(",")
+    shop_token = elasticpath_shop_api.get_access_token(client_id)
     elasticpath_shop_api.add_product(
-        token=_shop_token,
+        token=shop_token,
         cart_reference=update.effective_user.id,
         product_id=product_id,
         quantity=int(quantity)
@@ -113,10 +118,11 @@ def handle_description(update: Update, context) -> str:
 
 
 def handle_cart(update: Update, context) -> str:
+    shop_token = elasticpath_shop_api.get_access_token(client_id)
     query = update.callback_query
     query.answer()
     if query.data == "back":
-        products = elasticpath_shop_api.get_products(_shop_token)
+        products = elasticpath_shop_api.get_products(shop_token)
         view_menu(query.message, products)
         query.delete_message()
 
@@ -128,7 +134,7 @@ def handle_cart(update: Update, context) -> str:
         return 'HANDLE_WAITING_EMAIL'
 
     elasticpath_shop_api.remove_cart_item(
-        _shop_token, update.effective_user.id, query.data,)
+        shop_token, update.effective_user.id, query.data,)
     view_cart(query.message, cart_reference=update.effective_user.id)
     query.delete_message()
 
@@ -137,9 +143,9 @@ def handle_cart(update: Update, context) -> str:
 
 def handle_input_email(update: Update, context) -> str:
     user_email = update.message.text
-    
+    shop_token = elasticpath_shop_api.get_access_token(client_id)
     # https://ru.stackoverflow.com/questions/306126/%D0%92%D0%B0%D0%BB%D0%B8%D0%B4%D0%B0%D1%86%D0%B8%D1%8F-email-%D0%B2
-    if not re.match( r"^[-\w\.]+@([-\w]+\.)+[-\w]{2,4}$", user_email):
+    if not re.match(r"^[-\w\.]+@([-\w]+\.)+[-\w]{2,4}$", user_email):
         update.message.reply_text(
             "Ошибка, пожалуйста, укажите корректный адрес электронной почты")
 
@@ -147,11 +153,11 @@ def handle_input_email(update: Update, context) -> str:
     else:
         user_name = update.effective_user.full_name
         elasticpath_shop_api.create_customer(
-            token=_shop_token,
+            token=shop_token,
             name=user_name,
             email=user_email,
         )
-        products = elasticpath_shop_api.get_products(_shop_token)
+        products = elasticpath_shop_api.get_products(shop_token)
         view_menu(update.message, products)
 
         return 'HANDLE_MENU'
@@ -219,7 +225,6 @@ if __name__ == '__main__':
     env.read_env()
     client_id = env("ELASTICPATH_CLIENT_ID")
     telegram_api_key = env("TELEGRAM_API_KEY")
-    _shop_token = elasticpath_shop_api.get_access_token(client_id)
     updater = Updater(telegram_api_key)
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CallbackQueryHandler(handle_users_reply))
